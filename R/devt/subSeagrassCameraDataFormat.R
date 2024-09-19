@@ -2,7 +2,6 @@
 # Import and format camera data
 
 # load packages ####
-## use pacman package to install/import/load packages
 ld_pkgs <- c("tidyverse", "tictoc","janitor")
 vapply(ld_pkgs, library, logical(1L),
        character.only = TRUE, logical.return = TRUE);rm(ld_pkgs)
@@ -37,7 +36,7 @@ df_camera %>%
   relocate(wbid) %>% 
   mutate(wb_code = paste0(wbid,"_",bed_id),
          date=as_datetime(as_date(
-           as.numeric(tmp$go_pro_image_date_time),
+           as.numeric(go_pro_image_date_time),
            origin = "1899-12-30")),
          year=lubridate::year(date),
          areal_cover=1,
@@ -47,11 +46,17 @@ df_camera %>%
          zostera_marina_present = "Yes",
          zostera_marina = 1,
          depth_cd = depth_cd
-  ) %>%
-  dplyr::select(wb_code, bed_name, year,areal_cover,
+  ) %>% #names()
+  dplyr::select(waterbody,wb_code, bed_name, year,areal_cover,
                 quadrat_number,percentage_cover,
-                zostera_marina_present,zostera_marina,depth_cd)
+                zostera_marina_present, # not sure if actually required
+                zostera_marina,depth_cd # not sure if actually required
+                )
 
 ### TO DO ###
 # * Generate data of extents by survey_year and survey_bed.
 # * Append extent data to output data
+# * Extract & append turbidity data to image files (wait for Todd to respond to Nina
+#   with update on whether turbidity measurements are actually being gathered during
+#   camera surveys.  As seagrass beds aren't tied to WIMS sites, they are not analysed
+#   through CLICK & not uploaded to WIMS)
