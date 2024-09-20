@@ -6,7 +6,7 @@ ld_pkgs <- c("tidyverse", "tictoc","janitor")
 vapply(ld_pkgs, library, logical(1L),
        character.only = TRUE, logical.return = TRUE);rm(ld_pkgs)
 
-# load data ####
+# load data & append WB info ####
 tictoc::tic.clearlog()
 tic("Load & format camera survey analysis data")
 df_camera <- readxl::read_excel("data/Subtidal seagrass drop camera data - MASTER_CLEANED.xlsm",
@@ -47,11 +47,11 @@ df_camera %>%
          zostera_marina = 1,
          depth_cd = depth_cd
   ) %>% #names()
-  dplyr::select(waterbody,wb_code, bed_name, year,areal_cover,
+  dplyr::select(wbid,waterbody,wb_code, bed_name, year,areal_cover,
                 quadrat_number,percentage_cover,
                 zostera_marina_present, # not sure if actually required
                 zostera_marina,depth_cd # not sure if actually required
-                )
+                ) -> tmp
 
 ### TO DO ###
 # * Generate data of extents by survey_year and survey_bed.
