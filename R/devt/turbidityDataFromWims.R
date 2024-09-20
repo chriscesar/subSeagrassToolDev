@@ -104,3 +104,7 @@ for (i in seq_along(levels(as.factor(tmp_sites_filt$wims_region)))) {
 # If you want to combine all results into one data frame:
 turb_ssol_extracts <- dplyr::bind_rows(all_results);rm(all_results)
 toc(log=TRUE)
+
+# tidy up ####
+rm(result, tmp_codes,tmp_sites_filt, wims.regions,current_dsn,
+   current_sites,i,get_and_save1)
