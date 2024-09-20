@@ -53,6 +53,11 @@ df_camera %>%
                 zostera_marina,depth_cd # not sure if actually required
                 ) -> tmp
 
+# Extract all turbidity data from WIMS for WBs we have image data for####
+tic("Extract all turbidity data from WIMS for WBs we have image data for")
+source("R/devt/turbidityDataFromWims.R")
+toc(log = TRUE)
+
 ### TO DO ###
 # * Generate data of extents by survey_year and survey_bed.
 # * Append extent data to output data
