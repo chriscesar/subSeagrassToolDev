@@ -6,9 +6,9 @@ ld_pkgs <- c("tidyverse", "tictoc","janitor")
 vapply(ld_pkgs, library, logical(1L),
        character.only = TRUE, logical.return = TRUE);rm(ld_pkgs)
 
-# load data & append WB info ####
+# Load camera survey analysis data
 tictoc::tic.clearlog()
-tic("Load & format camera survey analysis data")
+tic("Load camera survey analysis data")
 df_camera <- readxl::read_excel("data/Subtidal seagrass drop camera data - MASTER_CLEANED.xlsm",
                                 sheet="Clean_Trim",
                                 guess_max = 20000
@@ -16,7 +16,7 @@ df_camera <- readxl::read_excel("data/Subtidal seagrass drop camera data - MASTE
 df_camera <- janitor::clean_names(df_camera)
 toc(log=TRUE)
 
-tic("Load & append WB name data")
+tic("Append WB name data")
 ref_wbs <- janitor::clean_names(as_tibble(read.csv("reference/wbs.csv", header=TRUE)))
 
 df_camera %>% 
@@ -52,6 +52,7 @@ df_camera %>%
                 zostera_marina_present, # not sure if actually required
                 zostera_marina,depth_cd # not sure if actually required
                 ) -> tmp
+toc(log=TRUE)
 
 # Extract all turbidity data from WIMS for WBs we have image data for####
 tic("Extract all turbidity data from WIMS for WBs we have image data for")
