@@ -10,7 +10,7 @@
 # Profit?
 
 ## load packages
-ld_pkgs <- c("DBI", "odbc", "dplyr", "stringr", "glue", "lubridate",
+ld_pkgs <- c("DBI", "odbc", "dplyr", "stringr", "glue", "lubridate","seas",
              "tictoc", "arrow", "here", "readxl", "purrr", "beepr")
 vapply(ld_pkgs, library, logical(1L),
        character.only = TRUE, logical.return = TRUE);rm(ld_pkgs)
@@ -19,15 +19,15 @@ vapply(ld_pkgs, library, logical(1L),
 # 'tmp' = camera imagery data generated in 'subSeagrassCameraDataFormat.R'
 
 # Bring up list of water bodies visited in the camera data####
-tic("Bring up list of water bodies visited in the camera data")
+# tic("Bring up list of water bodies visited in the camera data")
 readxl::read_excel("reference/all.saline.sites_WBs.xlsx",
                    sheet="SalineSitesJoined",
                    guess_max = 20000
                    ) -> tmp_sites_all
-toc(log = TRUE)
+# toc(log = TRUE)
 
 #Filter WIMS site IDs from each visited water body####
-tic("Filter WIMS site IDs from each visited water body")
+# tic("Filter WIMS site IDs from each visited water body")
 tmp %>% dplyr::select(wbid) %>% distinct() -> tmp_wbs
 
 tmp_sites_all %>% 
@@ -44,10 +44,10 @@ tmp_sites_all %>%
   mutate(.,region = toupper(substr(.$wims_region,start=5,stop=6))) -> tmp_sites_filt
 
 rm(tmp_wbs,tmp_sites_all)
-toc(log=TRUE)
+# toc(log=TRUE)
 
 # Generate vector of turbidity and suspended solids determinands ####
-tic("Generate vector of turbidity and suspended solids determinands")
+# tic("Generate vector of turbidity and suspended solids determinands")
 ## load code set
 tmp_codes <- readxl::read_excel("reference/National Code Set.xlsx",
                                 sheet = "DETS Codes",
@@ -62,20 +62,15 @@ tmp_codes <- readxl::read_excel("reference/National Code Set.xlsx",
               "limit_upper")) %>% 
   filter(.,
          str_starts(desc, "Solids, Sus") | str_starts(desc, "Turbid"))
-toc(log=TRUE)  
+# toc(log=TRUE)  
 
 # Extract data from WIMS ####
-tic("Extract data from WIMS")
+# tic("Extract data from WIMS")
 source("R/functions/get_and_save1.R")
 ## define wims.regions for extract:
 wims.regions <- tibble(db = c("wimsanpr","wimsmipr","wimsnepr","wimsnwpr","wimssopr", "wimsswpr", "wimsthpr"),
                        reg = c('ANGLIAN', 'MIDLANDS', 'NORTH EAST', 'NORTH WEST', 'SOUTHERN', 'SOUTH WEST' , 'THAMES'),
                        res = c('AN', 'MI', 'NE', 'NW', 'SO', 'SW', 'TH'))
-
-# x <- get_and_save1(wimsdb = tmp_sites_filt$wims_region[1],
-#                    site.list = tmp_sites_filt %>% filter(.,wims_region=="wimsanpr") %>% 
-#                      dplyr::select(SMPT_USER_REFERENCE),
-#                    det.list = unique(tmp_codes$det_code))
 
 # Initialize an empty list to store results
 all_results <- list()
@@ -102,9 +97,28 @@ for (i in seq_along(levels(as.factor(tmp_sites_filt$wims_region)))) {
 }
 
 # If you want to combine all results into one data frame:
-turb_ssol_extracts <- dplyr::bind_rows(all_results);rm(all_results)
-toc(log=TRUE)
+turb_ssol_extracts <- dplyr::bind_rows(all_results)
+# toc(log=TRUE)
+left_join(turb_ssol_extracts,
+          tmp_sites_filt,
+          by=c("SAMP_SMPT_USER_REFERENCE"="SMPT_USER_REFERENCE")) %>% 
+  relocate(WBName) %>% relocate(WBID) -> turb_ssol_extracts
+
+turb_ssol_extracts %>% 
+  rename(wims_region = wims_region.x) %>% relocate(wims_region) %>% 
+  dplyr::select(., -c(wims_region.y, region))->turb_ssol_extracts
+
+# Remove problematic samples & add season variable
+turb_ssol_extracts %>% 
+  filter(.,
+         SAMP_MATERIAL != "2CZZ",
+         SAMP_MATERIAL != "2GZZ") %>% ## remove 2CZZ (drainage), 2GZZ (reservoir/lake)
+  mutate(
+    year = lubridate::year(DATE_TIME),
+    seas = seas::mkseas(DATE_TIME, width = "DJF")) %>% 
+  relocate(.,"year", .after = DATE_TIME) %>%
+  relocate(.,"seas", .after = "year") -> turb_ssol_extracts
 
 # tidy up ####
-rm(result, tmp_codes,tmp_sites_filt, wims.regions,current_dsn,
+rm(all_results,result, tmp_codes,tmp_sites_filt, wims.regions,current_dsn,
    current_sites,i,get_and_save1)
