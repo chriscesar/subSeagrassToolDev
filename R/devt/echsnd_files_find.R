@@ -1,11 +1,11 @@
 # echsnd_files_find.R ----
 
 # AUTHOR: Dr Christopher Cesar
-# Last edited:
+# Last edited: 11/08/2026
 
 # AIM:  Search the folders containing echosounder data analysis outputs &
 #       identify CANDIDATE echosounder analysis files.  The list of files will
-#       be further explored in the the script: process_echsnd
+#       be further explored in the the script: echsnd_files_process.R
 
 #   COPILOT PROMPT:
 #   I want to use R to identify files located within multiple directories and
