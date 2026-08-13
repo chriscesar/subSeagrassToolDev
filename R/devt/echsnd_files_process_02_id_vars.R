@@ -22,23 +22,7 @@ file_lookup <- read.csv("data/possible_echosounder_files_lookup.csv")
 # for every file in the destination folder, we need to see what row the variable names start
 # and extract the variable names for further comparison
 
-# Required column headers
-
-
-
-# Headers that must all exist on the same row
-required_headers <- c(
-  "From pos",
-  "Center pos",
-  "To pos",
-  "% Ar.Inh."
-)
-
 tictoc::tic("Define function for identifying starter row")
-library(readxl)
-library(dplyr)
-library(purrr)
-library(stringr)
 
 # Headers that must all be present on the same row
 required_headers <- c(
@@ -92,6 +76,7 @@ find_header_row <- function(file,
     headers_found = !is.na(header_row)
   )
 }
+
 # Get all xlsx files
 files <- list.files(
   path = destdir,
@@ -192,79 +177,87 @@ write.csv(combined_data,file = "data/candidate_echsnd_combined.csv",
           row.names = FALSE)
 tictoc::toc(log=TRUE)
 
-# extract_file_data <- function(file, header_row) {
-#   
-#   # Read entire sheet
-#   x <- read_excel(
-#     file,
-#     sheet = 1,
-#     col_names = FALSE
-#   )
-#   
-#   # Build column names from the two header rows
-#   header1 <- x[header_row, ] |> unlist() |> as.character()
-#   header2 <- x[header_row + 1, ] |> unlist() |> as.character()
-#   
-#   col_names <- paste(
-#     coalesce(header1, ""),
-#     coalesce(header2, "")
-#   ) |>
-#     str_squish()
-#   
-#   # Replace completely empty names
-#   col_names[col_names == ""] <- paste0(
-#     "unnamed_",
-#     seq_along(col_names[col_names == ""])
-#   )
-#   
-#   # Data begin after:
-#   # header row 1
-#   # header row 2
-#   # blank row
-#   data_start <- header_row + 3
-#   
-#   data <- x[data_start:nrow(x), ]
-#   
-#   # Find first completely empty row
-#   empty_rows <- apply(
-#     data,
-#     1,
-#     function(r) {
-#       all(is.na(r) | trimws(as.character(r)) == "")
-#     }
-#   )
-#   
-#   if (any(empty_rows)) {
-#     first_empty <- which(empty_rows)[1]
-#     data <- data[seq_len(first_empty - 1), ]
-#   }
-#   
-#   names(data) <- make_clean_names(col_names)
-#   
-#   data %>%
-#     mutate(
-#       excel_file = basename(file),
-#       .before = 1
-#     )
-# }
-# 
-# ## run ----
-# valid_results <- results %>%
-#   filter(headers_found)
-# 
-# combined_data <- purrr::map2_dfr(
+# Audit column name consistency ----
+get_column_names <- function(file, header_row) {
+  
+  x <- readxl::read_excel(
+    file,
+    sheet = 1,
+    col_names = FALSE
+  )
+  
+  header1 <- x[header_row, ] |> unlist() |> as.character()
+  header2 <- x[header_row + 1, ] |> unlist() |> as.character()
+  
+  col_names <- paste(
+    dplyr::coalesce(header1, ""),
+    dplyr::coalesce(header2, "")
+  ) |>
+    stringr::str_squish() |>
+    janitor::make_clean_names()
+  
+  tibble::tibble(
+    column_name = col_names
+  )
+}
+
+## build an audit table ----
+# Aim to ensure all files have consistent variable names
+# header_audit <- purrr::map2_dfr(
 #   file.path(destdir, valid_results$file_name),
 #   valid_results$header_row,
-#   extract_file_data
-# )
+#   ~ get_column_names(.x, .y) |>
+#     dplyr::mutate(file_name = basename(.x))
+#   )
 # 
-# write.csv(combined_data,file = "data/candidate_echsnd_combined.csv",row.names = FALSE)
+## Identify columns that don't occur in every file ----
+# column_frequency <- header_audit %>%
+#   count(column_name, sort = TRUE) %>% 
+#   filter(n < n_distinct(header_audit$file_name))
 # 
-# tictoc::toc(log=TRUE)
+## Find files with unique column structures ----
+# ## Create a signature for each file
+# file_structures <- header_audit %>%
+#   arrange(file_name, column_name) %>%
+#   group_by(file_name) %>%
+#   summarise(
+#     structure = paste(column_name, collapse = "|"),
+#     .groups = "drop"
+#   )
 # 
-# # test <- extract_file_data(
-# #   file.path(destdir, valid_results$file_name[1]),
-# #   valid_results$header_row[1]
-# # )
-# # 
-# # names(test)
+# # Count unique structures
+# file_structures %>%
+#   count(structure, sort = TRUE)
+# 
+## Compare against a reference file ----
+# ## Use first file as the standard
+# reference_cols <- combined_data %>%
+#   names()
+# 
+# ## Find files containing unexpected columns
+# header_audit %>%
+#   count(file_name) %>%
+#   arrange(n) %>% View()
+# 
+# ^ Checked and cleared
+
+# Tidy up
+
+rm(combined_data,file_lookup,file_structures,header_audit,
+   results, results_enriched, valid_results,
+   datfol, destdir, files, reference_cols, column_frequency,
+   required_headers,
+   extract_file_data, find_header_row, get_column_names,
+   )
+
+ld_pkgs <- c("tidyverse","tictoc","readxl","dplyr","purrr","tidyr",
+             "stringr","janitor")
+
+detach("package:tictoc", unload = TRUE)
+detach("package:readxl", unload = TRUE)
+detach("package:tidyr", unload = TRUE)
+detach("package:dplyr", unload = TRUE)
+detach("package:janitor", unload = TRUE)
+detach("package:stringr", unload = TRUE)
+detach("package:purrr", unload = TRUE)
+detach("package:tidyverse", unload = TRUE)
