@@ -5,6 +5,84 @@
 
 # AIM:  Further processing of copied candidate files
 
+# SCRIPT EXPLAINER ------------------------------------------------------------
+#
+# PURPOSE
+# This script performs the final identification and extraction stage of the
+# echosounder file processing workflow. It processes candidate Excel files
+# identified by earlier scripts, locates the true table header row within each
+# workbook, extracts the associated data tables, and combines all records into
+# a single standardised dataset.
+#
+# CONTEXT
+# Candidate files have already been identified and copied into a dedicated
+# working directory. However, variation in workbook formatting means the table
+# header row may not occur at a consistent position across files. This script
+# determines the correct header row for each workbook before extracting data.
+#
+# APPROACH
+# Files are validated by searching for a set of expected echosounder table
+# headers:
+#
+#   • From pos
+#   • Center pos
+#   • To pos
+#   • % Ar.Inh.
+#
+# The first row containing all required headers is assumed to represent the
+# start of the data table. Once identified, the script reconstructs column
+# names, extracts the tabular data beneath the header, and applies consistent
+# variable naming conventions across all files.
+#
+# PROCESS
+#   1. Load candidate workbook metadata and file look-up information.
+#   2. Search each workbook for the row containing the required headers.
+#   3. Record the detected header row and flag valid files.
+#   4. Reconstruct column names using the two-row header structure commonly
+#      used in echosounder output files.
+#   5. Extract data records below the header rows.
+#   6. Stop extraction at the first completely empty row.
+#   7. Standardise column names using janitor::make_clean_names().
+#   8. Append source file metadata to each record.
+#   9. Combine data from all valid files into a single dataset.
+#
+# OUTPUTS
+# The script produces:
+#
+#   • combined_data
+#       Combined dataset containing records extracted from all valid
+#       echosounder workbooks.
+#
+#   • candidate_echsnd_combined.csv
+#       CSV export of the combined dataset for subsequent analysis and QA.
+#
+# QUALITY ASSURANCE
+# Additional (currently disabled) audit code is included to:
+#
+#   • Compare column names across workbooks.
+#   • Identify files with inconsistent variable structures.
+#   • Detect unexpected or missing variables.
+#   • Assess whether all files conform to a common schema.
+#
+# These checks were used during development to verify consistency in file
+# structure and can be re-enabled if further validation is required.
+#
+# WORKFLOW POSITION
+# This script represents the final stage of the echosounder file discovery and
+# extraction process:
+#
+#   echsnd_files_00_find.R
+#       Identify candidate files based on expected header patterns.
+#
+#   echsnd_files_01_copy.R
+#       Copy candidate files into a dedicated processing workspace.
+#
+#   echsnd_files_02_process_id_vars.R
+#       Validate file structure, extract data, standardise variables, and
+#       create a consolidated dataset.
+#
+# -----------------------------------------------------------------------------
+
 # load packages & data ----
 ld_pkgs <- c("tidyverse","tictoc","readxl","dplyr","purrr","tidyr",
              "stringr","janitor")

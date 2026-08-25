@@ -24,6 +24,53 @@
 # 5.  The folders are likely to contain lots of files, so this needs to be
 #      as computationally-efficient as possible
 
+# SCRIPT EXPLAINER ------------------------------------------------------------
+#
+# PURPOSE
+# This script performs the first stage of the echosounder file discovery
+# workflow. It searches a specified directory tree for Excel workbooks that
+# are likely to contain processed echosounder analysis outputs.
+#
+# APPROACH
+# Rather than reading entire workbooks, the script scans a restricted range of
+# rows and columns within each worksheet to improve performance when processing
+# large numbers of files. Candidate files are identified by the presence of a
+# set of expected column headers:
+#
+#   • From pos
+#   • Center pos
+#   • To pos
+#   • % Ar.Inh.
+#
+# A workbook is considered a candidate if all required headers occur on the
+# same row within at least one worksheet. This pattern is characteristic of
+# echosounder analysis summary tables and is used as a proxy for identifying
+# relevant files.
+#
+# PROCESS
+#   1. Recursively locate all .xlsx and .xls files within the target folder.
+#   2. Inspect each worksheet within each workbook.
+#   3. Read only the specified cell range likely to contain table headers.
+#   4. Test whether all required header fields occur on the same row.
+#   5. Record the full file path for matching workbooks.
+#
+# OUTPUTS
+# The script produces:
+#   • matching_files: Character vector containing full paths to all candidate
+#     echosounder files.
+#   • possible_echosounder_files.Rdat: Serialized R object containing the file
+#     list.
+#   • possible_echosounder_files.csv: CSV export of the file list for review.
+#
+# NOTES
+# This script is intentionally conservative and identifies candidate files
+# based solely on header structure. Files identified here should be regarded
+# as potential matches and undergo further validation in:
+#
+#   echsnd_files_process.R
+#
+# -----------------------------------------------------------------------------
+
 # Load packages ----
 library(readxl)
 library(dplyr)
@@ -148,8 +195,8 @@ find_matching_excel_files <- function(
 }
 
 
-# Run function to ID files ----
-tictoc::tic("ID files")
+# Run function to identify candidate files ----
+tictoc::tic("Identify candidate files")
 matching_files <- find_matching_excel_files(
   root_dir = datfol,
   start_row = 17,

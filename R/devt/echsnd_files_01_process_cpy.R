@@ -8,6 +8,74 @@
 #       time and allow for exploration to identify. Further investigation will
 #       be carried out in echsnd_files_process_02_id_vars.R
 
+# SCRIPT EXPLAINER ------------------------------------------------------------
+#
+# PURPOSE
+# This script performs the second stage of the echosounder file discovery
+# workflow. It takes the candidate files identified in:
+#
+#   echsnd_files_00_find.R
+#
+# and prepares a curated collection of files for downstream processing.
+#
+# The script resolves duplicate filenames, applies manual quality-control
+# decisions, and copies approved files from network storage to a local working
+# directory. Processing files locally reduces file-access overhead and improves
+# performance for subsequent analysis steps.
+#
+# APPROACH
+# Candidate files identified during the discovery stage may contain multiple
+# files with identical filenames (e.g. "Results.xlsx") originating from
+# different surveys, projects, or directory locations. To prevent ambiguity:
+#
+#   • Duplicate filenames are identified and reviewed.
+#   • A manually curated lookup table is used to determine which files should
+#     be retained.
+#   • Approved files are renamed using survey year prefixes to ensure unique
+#     filenames.
+#   • Files are copied to a dedicated local workspace while preserving trace-
+#     ability to their original locations.
+#
+# PROCESS
+#   1. Load the list of candidate echosounder files.
+#   2. Identify duplicated filenames for manual review.
+#   3. Import the curated file-selection spreadsheet containing:
+#        - Duplicate flag
+#        - Keep/Remove action
+#        - Survey year
+#   4. Retain only files marked for inclusion.
+#   5. Generate unique destination filenames by prepending survey year.
+#   6. Copy selected files from network storage to local storage.
+#   7. Record copy successes and failures.
+#   8. Create a lookup table linking original and renamed file paths.
+#
+# OUTPUTS
+# This script produces:
+#
+#   • data/candidate_echsnd/
+#       Local working directory containing approved echosounder files.
+#
+#   • possible_echosounder_files_lookup.csv
+#       Lookup table linking original file locations to renamed local copies.
+#
+#   • failed_files
+#       Object containing details of files that could not be copied.
+#
+# NOTES
+# File selection decisions are based on a manually reviewed spreadsheet
+# (possible_echosounder_files_kps.csv). This review step is necessary because
+# filename duplication alone is insufficient for determining which files
+# represent the appropriate survey outputs.
+#
+# The resulting curated file collection forms the input dataset for:
+#
+#   echsnd_files_02_id_vars.R
+#
+# where workbook contents will be examined to identify variables and extract
+# metadata required for subsequent analysis.
+#
+# -----------------------------------------------------------------------------
+
 # load packages & data ----
 ld_pkgs <- c("tidyverse","tictoc","fs", "purrr","stringr", "progress")
 vapply(ld_pkgs, library, logical(1L),
