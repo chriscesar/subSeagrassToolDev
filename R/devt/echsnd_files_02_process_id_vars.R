@@ -229,8 +229,24 @@ extract_file_data <- function(file,
   
   names(data) <- janitor::make_clean_names(col_names)
   
+  # Duplicate filename value down all rows
+  if ("file_name" %in% names(data)) {
+    
+    first_file_name <- data$file_name[
+      which(
+        !is.na(data$file_name) &
+          stringr::str_squish(as.character(data$file_name)) != ""
+      )[1]
+    ]
+    
+    data <- data %>%
+      dplyr::mutate(
+        file_name = first_file_name
+      )
+  }
+  
   data %>%
-    mutate(
+    dplyr::mutate(
       excel_file = basename(file),
       original_filename = original_filename,
       original_filepath = original_filepath,
